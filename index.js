@@ -411,7 +411,7 @@ function userfunction_createMenu() {
 //トレイアイコンを作成
 function userfunction_createTrayIcon() {
   let imgFilePath;
-  imgFilePath = __dirname + "/favicon.ico";
+  imgFilePath = __dirname + "/build/favicon.ico";
   const contextMenu = Menu.buildFromTemplate([
     {
       label: "表示",
