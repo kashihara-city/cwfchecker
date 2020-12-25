@@ -55,9 +55,52 @@ let timeinterval;
 let tray;
 //-----------------------------グローバル変数終わり----------------------------------------
 
-//------------------------------初期処理------------------------------
+//------------------------------主処理----------------------------------------
+
+//whenreadyはelectronアプリケーションを起動し、初期化される際に実行される非同期処理(promise)。
+app.whenReady().then(() => {
+  //初期処理
+  userfunction_initial();
+  //メニュー作成
+  userfunction_createMenu();
+  //メインウィンドウオープン
+  userfunction_createWindow();
+  //トレイアイコンを作る
+  userfunction_createTrayIcon();
+});
+
+//appのwill-quit等のイベントを捕まえて、アプリケーションを終了する
+//（）=>はjavascriptのアロー関数。=>で関数リテラルを記述する。
+//（引数）=>｛処理本体｝
+app.on("will-quit", () => {
+  // すべてのショートカットを登録解除
+  globalShortcut.unregisterAll();
+});
+
+//プロセスをちゃんと終わらせる
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
+  }
+});
+
+//アプリケーションの初期化が完了したことを意味するwill-finish-launchingのイベント
+//通常はここに初期化イベントを書く
+app.on("will-finish-launching", () => {
+  console.log("will-finish-launching");
+});
+
+//ウィンドウがフォーカスされたイベント
+//eventを引数にしてウィンドウの番号を表示
+app.on("browser-window-focus", (event) => {
+  console.log("browser-window-focus" + event.sender.id);
+});
+
+//---------------------------主処理終わり--------------------------------------
+
+//------------------------------初期処理関数------------------------------
 function userfunction_initial() {
-  //-------------------------------storeから読み出し----------------------
+  //storeから読み出し
   const storedata = new store();
 
   //browserwindow用のURLを組み立てる
@@ -78,8 +121,9 @@ function userfunction_initial() {
   }
   console.log("timeinterval=" + timeinterval);
 }
-//-------------------------------storeから読み出し終了----------------------
+//--------------------------初期処理関数終わり---------------------------
 
+//---------------------------主画面生成関数-------------------------------------------------------
 //newBrowserdindowをwinで宣言し、win.loadfileでファイルを読みこむ関数。
 //これでappとbrowserwindowが成立させる
 function userfunction_createWindow() {
@@ -135,7 +179,7 @@ function userfunction_createWindow() {
   });
 
   //win関係のイベント
-  //winはfunctionの中にあるので、このイベントはfunctionの中に書かないと動かない
+  //主画面のwinはfunctionの中にあるので、このイベントは基本的にはfunctionの中に書かないと動かない
   //ウェブコンテンツのイベントもこのオブジェクトを使う。
   win.webContents.on("dom-ready", () => {
     counter_DOMreadycounter++;
@@ -199,9 +243,9 @@ function userfunction_createWindow() {
       } else {
         const win = new BrowserWindow({
           webContents: options.webContents, // あれば既存の webContents を使用する
-          //worldSafeExecuteJavaScript: true,
+          worldSafeExecuteJavaScript: true,
           nodeIntegration: false,
-          //contextIsolation: true,
+          contextIsolation: true,
           show: false,
         });
         win.once("ready-to-show", () => win.show());
@@ -222,18 +266,18 @@ function userfunction_createWindow() {
 
           //ダウンロードを検知した場合にデフォルトのダウンロードフォルダにダウンロードしてシェルで開く
           //ここのwinは最大化して開いたwinであることに注意
-          //この処理がないとelectronは規定ではダウンロードダイアログが表示されてしまう
+          //この処理がないとelectronは規定ではダウンロードダイアログが表示されてしまう。
           win.webContents.session.on(
             "will-download",
             (event, item, webContents) => {
               let downloaddestintion =
                 Downloadfolder +
                 "\\" +
-                //                userfunction_formatDate(new Date(), "yyyyMMddHHmmssSSS") +
+                //一つのファイルにwill-downloadが複数発生することが有るので、ランダム文字列をファイル名の頭に
+                //付加してファイル存否判定をして、存在するファイルだけを開く
                 Math.random().toString(32).substring(2) +
                 item.getFilename();
               console.log(downloaddestintion);
-              //  app.getPath("downloads") + "\\" + item.getFilename();
               item.setSavePath(downloaddestintion);
               console.log("willdownload");
               item.once("done", (event, state) => {
@@ -277,21 +321,68 @@ function userfunction_createWindow() {
   //setInterval(kessaicount, 1000 * 15);
   //本番のときは*1000*60にしとくこと
   function kessaicount() {
-    //Domreadycounterが1超えかつ設定画面と決裁画面が閉じてないと判定を開始しない。
+    //Domreadycounterが1超えかつ設定画面と決裁画面が閉じてないと本体処理を開始しない。
     if (
       counter_DOMreadycounter > 0 &&
       flag_SettingWindowOpened === 0 &&
       flag_KessaiWindowOpened === 0
     ) {
       //非同期関数でもうちょっとまともに書けるはずだが今はこれしかかけない
-      //この関数でリロードすると、自動的にポートレットの中身をwin.webcontentsのon domreadyで問い合わせる
-      //問い合わせ結果（一番最後のipcmain.on nakami_ohenji）に応じて、決裁が回ってきてたらウィンドウの表示するなどを判定する。
+      //この関数でメインウィンドウをリロードすると、自動的にポートレットの中身をwin.webcontentsのon domreadyで問い合わせる。
+      //問い合わせ結果（一番最後のipcmain.on nakami_ohenji）に応じて、ウィンドウの表示するなどを判定する。
       userfunction_reloadWindow();
     }
   }
 }
 
-function createmenupage() {
+//---------------------------主画面生成関数終わり------------------------------------------------
+
+//-------------------------メニュー・設定画面関係-------------------------------------------
+
+//メニュー作成
+function userfunction_createMenu() {
+  let menu_temp = [
+    {
+      label: "   メニュー   ",
+      submenu: [
+        {
+          label: "設定画面",
+          click: () => {
+            console.log("New menu.");
+            //設定画面を開いているときは二重に開かない
+            if (flag_SettingWindowOpened < 1) {
+              userfunction_createmenupage();
+            }
+            flag_SettingWindowOpened = 1;
+          },
+        },
+        { type: "separator" },
+        {
+          label: "アプリ終了",
+          click: () => {
+            console.log("Quit menu.");
+            flag_DontPreventClose = 1;
+            app.quit();
+          },
+        },
+      ],
+    },
+    {
+      label: "   更新   ",
+      role: "reload",
+    },
+    {
+      label: "   閉じる   ",
+      role: "close",
+    },
+  ];
+  let menu = Menu.buildFromTemplate(menu_temp);
+
+  Menu.setApplicationMenu(menu);
+}
+
+//メニューから呼び出す設定画面
+function userfunction_createmenupage() {
   let win = new BrowserWindow({
     width: 400,
     height: 750,
@@ -327,88 +418,7 @@ function createmenupage() {
   });
 }
 
-//whenreadyはelectronアプリケーションを起動し、初期化される際に実行される非同期処理(promise)。
-app.whenReady().then(() => {
-  //初期処理
-  userfunction_initial();
-  //メニュー作成
-  userfunction_createMenu();
-  //メインウィンドウオープン
-  userfunction_createWindow();
-  //トレイアイコンを作る
-  userfunction_createTrayIcon();
-});
-
-//appのwill-quit等のイベントを捕まえて、アプリケーションを終了する
-//（）=>はjavascriptのアロー関数。=>で関数リテラルを記述する。
-//（引数）=>｛処理本体｝
-app.on("will-quit", () => {
-  // すべてのショートカットを登録解除
-  globalShortcut.unregisterAll();
-});
-
-//プロセスをちゃんと終わらせる
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
-});
-
-//アプリケーションの初期化が完了したことを意味するwill-finish-launchingのイベント
-//通常はここに初期化イベントを書く
-app.on("will-finish-launching", () => {
-  console.log("will-finish-launching");
-});
-
-//ウィンドウがフォーカスされたイベント
-//eventを引数にしてウィンドウの番号を表示
-app.on("browser-window-focus", (event) => {
-  console.log("browser-window-focus" + event.sender.id);
-});
-
-//メニュー作成
-function userfunction_createMenu() {
-  let menu_temp = [
-    {
-      label: "   メニュー   ",
-      submenu: [
-        {
-          label: "設定画面",
-          click: () => {
-            console.log("New menu.");
-            //設定画面を開いているときは二重に開かない
-            if (flag_SettingWindowOpened < 1) {
-              createmenupage();
-            }
-            flag_SettingWindowOpened = 1;
-          },
-        },
-        { type: "separator" },
-        {
-          label: "アプリ終了",
-          click: () => {
-            console.log("Quit menu.");
-            flag_DontPreventClose = 1;
-            app.quit();
-          },
-        },
-      ],
-    },
-    {
-      label: "   更新   ",
-      role: "reload",
-    },
-    {
-      label: "   閉じる   ",
-      role: "close",
-    },
-  ];
-  let menu = Menu.buildFromTemplate(menu_temp);
-
-  Menu.setApplicationMenu(menu);
-}
-
-//トレイアイコンを作成
+//トレイアイコンの作成
 function userfunction_createTrayIcon() {
   let imgFilePath;
   imgFilePath = __dirname + "/build/favicon.ico";
@@ -438,6 +448,9 @@ function userfunction_createTrayIcon() {
   });
 }
 
+//-------------------------メニュー・設定画面関係終わり-------------------------------------------
+
+//----------------------ウインドウ操作関係---------------------------------------------
 //メインウィンドウをリロードして表示(更新はdomreadyになったことがある場合のみ)
 function userfunction_ReloadandShowWindow() {
   userfunction_reloadWindow();
@@ -458,6 +471,10 @@ function userfunction_ShowWindow() {
   window_main.show();
   window_main.focus();
 }
+
+//----------------------ウインドウ操作関係終わり-----------------------------------------
+
+//---------------------------------メイン・レンダラープロセス間通信------------------------
 
 //メインウィンドウのIPC待受（preloadcwf.jsからの返信）
 ipcMain.on("nakami_ohenji", (event, ohenji_sono1, ohenji_sono2) => {
@@ -505,17 +522,9 @@ ipcMain.on("ipc_setting_update", (event, param) => {
   app.exit();
 });
 
-//日付を指定のフォーマットにする
-function userfunction_formatDate(date, format) {
-  format = format.replace(/yyyy/g, date.getFullYear());
-  format = format.replace(/MM/g, ("0" + (date.getMonth() + 1)).slice(-2));
-  format = format.replace(/dd/g, ("0" + date.getDate()).slice(-2));
-  format = format.replace(/HH/g, ("0" + date.getHours()).slice(-2));
-  format = format.replace(/mm/g, ("0" + date.getMinutes()).slice(-2));
-  format = format.replace(/ss/g, ("0" + date.getSeconds()).slice(-2));
-  format = format.replace(/SSS/g, ("00" + date.getMilliseconds()).slice(-3));
-  return format;
-}
+//-------------------メイン・レンダラープロセス間通信関係　終わり------------------------
+
+//----------------------その他一般関数---------------------------------------------
 
 //フォルダにあるファイルを削除する
 function userfunction_deletefilesinfolder(dir) {
