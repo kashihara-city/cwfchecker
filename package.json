@@ -1,0 +1,41 @@
+{
+  "name": "createwebflowchecker",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "htajima",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^11.1.0",
+    "electron-store": "^6.0.1"
+  },
+  "Dependencies": {
+    "electron-store": "^6.0.1"
+  },
+  "build": {
+    "productName": "CreateWebFlowChecker",
+    "copyright": "Copyright 2020 ${author}",
+    "appId": "com.electron.cwfchecker",
+    "win": {
+      "icon": "build/favicon3.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "runAfterFinish": false
+    }
+  }
+}

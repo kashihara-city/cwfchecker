@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ja">
+<title>設定画面</title>
+<head>
+  <meta charset="UTF-8">
+    <link rel="stylesheet" href="./lib/bootstrap.min.css">
+    <script src="./lib/jquery-3.5.1.slim.min.js"></script>
+    <script src="./lib/popper.min.js"></script>
+    <script src="./lib/bootstrap.min.js"></script>
+</head>
+<body>
+
+  <div class="container">
+    <p><button class="btn btn-primary"onclick="save()">設定反映</button></p>
+    <p>ID<input class="form-control" id="input1"></input></p>
+    <p>PW<input class="form-control" id="input2" type="password"></input></p>
+    <p>AD SERVER<input class="form-control" id="input3"></input></p>
+    <p>CWFAdress<input class="form-control" id="input4"></input></p>
+    <p>確認間隔(分)<input class="form-control" id="input5"></input></p>
+  </div>
+
+
+  <script>
+      function save(){
+        let sendingmessage={}
+        sendingmessage.id=document.querySelector('#input1').value
+        sendingmessage.pw=document.querySelector('#input2').value
+        sendingmessage.ad=document.querySelector('#input3').value
+        sendingmessage.cwfadress=document.querySelector('#input4').value
+        sendingmessage.interval=document.querySelector('#input5').value
+        window.api.Settingupdate(sendingmessage);
+        }
+      </script>
+
+</body>
+</html>
