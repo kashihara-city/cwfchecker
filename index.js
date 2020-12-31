@@ -8,6 +8,7 @@ const {
   globalShortcut,
   shell,
   ipcMain,
+  session,
 } = require("electron");
 const path = require("path");
 const store = require("electron-store");
@@ -67,6 +68,8 @@ app.whenReady().then(() => {
   userfunction_createWindow();
   //トレイアイコンを作る
   userfunction_createTrayIcon();
+  //ダウンロードファイルの場所を指定する
+  userfunction_downloadcontrol();
 });
 
 //appのwill-quit等のイベントを捕まえて、アプリケーションを終了する
@@ -243,10 +246,15 @@ function userfunction_createWindow() {
       } else {
         const win = new BrowserWindow({
           webContents: options.webContents, // あれば既存の webContents を使用する
-          worldSafeExecuteJavaScript: true,
-          nodeIntegration: false,
-          contextIsolation: true,
-          show: false,
+          webPreferences: {
+            worldSafeExecuteJavaScript: true,
+            nodeIntegration: false,
+            contextIsolation: true,
+            show: false,
+            //chromiumのデフォルトで開く。これを指定しないと、electronのプロキシオブジェクトになるので、javascriptの機能が制限され
+            //て色々不具合が出る
+            nativeWindowOpen: true,
+          },
         });
         win.once("ready-to-show", () => win.show());
         if (!options.webContents) {
@@ -263,36 +271,6 @@ function userfunction_createWindow() {
           win.maximize();
           //win.webContents.openDevTools();
           flag_KessaiWindowOpened = 1;
-
-          //ダウンロードを検知した場合にデフォルトのダウンロードフォルダにダウンロードしてシェルで開く
-          //ここのwinは最大化して開いたwinであることに注意
-          //この処理がないとelectronは規定ではダウンロードダイアログが表示されてしまう。
-          win.webContents.session.on(
-            "will-download",
-            (event, item, webContents) => {
-              let downloaddestintion =
-                Downloadfolder +
-                "\\" +
-                //一つのファイルにwill-downloadが複数発生することが有るので、ランダム文字列をファイル名の頭に
-                //付加してファイル存否判定をして、存在するファイルだけを開く
-                Math.random().toString(32).substring(2) +
-                item.getFilename();
-              console.log(downloaddestintion);
-              item.setSavePath(downloaddestintion);
-              console.log("willdownload");
-              item.once("done", (event, state) => {
-                if (state === "completed") {
-                  console.log("Download successfully");
-
-                  if (fs.existsSync(downloaddestintion)) {
-                    shell.openPath(downloaddestintion);
-                  }
-                } else {
-                  console.log(`Download failed: ${state}`);
-                }
-              });
-            }
-          );
 
           //決裁画面など画面が閉じたら実行
           //ここのwinは最大化して開いたwinであることに注意
@@ -449,6 +427,43 @@ function userfunction_createTrayIcon() {
 }
 
 //-------------------------メニュー・設定画面関係終わり-------------------------------------------
+
+//-------------------ダウンロード制御関係------------------------
+
+//ダウンロードを検知した場合にデフォルトのダウンロードフォルダにダウンロードしてシェルで開く
+//この処理がないとelectronの既定ではダウンロードダイアログが表示されてしまう。
+//もともと、決裁画面のwin.webcontents.session.onでコントロールしていたが、複数回発火するなど
+//不安定であったため、electronからsessionを引く形に切り替えた
+function userfunction_downloadcontrol() {
+  session.defaultSession.on(
+    "will-download",
+    function (event, downloadItem, webContents) {
+      let downloaddestintion =
+        Downloadfolder +
+        "\\" +
+        //一つのファイルにwill-downloadが複数発生することが有るので、ランダム文字列をファイル名の頭に
+        //付加してファイル存否判定をして、存在するファイルだけを開く
+        //様な処理をしていたが、session.defaultsession.onに移したので不要になった
+        //Math.random().toString(32).substring(2) +
+        downloadItem.getFilename();
+      console.log(downloaddestintion);
+      downloadItem.setSavePath(downloaddestintion);
+      console.log("session-willdownload");
+      downloadItem.once("done", (event, state) => {
+        if (state === "completed") {
+          console.log("Download successfully");
+
+          if (fs.existsSync(downloaddestintion)) {
+            shell.openPath(downloaddestintion);
+          }
+        } else {
+          console.log(`Download failed: ${state}`);
+        }
+      });
+    }
+  );
+}
+//-------------------ダウンロード制御関係　終わり------------------------
 
 //----------------------ウインドウ操作関係---------------------------------------------
 //メインウィンドウをリロードして表示(更新はdomreadyになったことがある場合のみ)
