@@ -8,7 +8,6 @@ const {
   globalShortcut,
   shell,
   ipcMain,
-  session,
 } = require("electron");
 const path = require("path");
 const store = require("electron-store");
@@ -31,7 +30,7 @@ const SearchWord = "anchor anchor-primary";
 const SearchWordb = "<!-- 認証成功 -->";
 //添付ファイルなどのダウンロード先
 const Downloadfolder = app.getPath("documents") + "\\cwf_downloads";
-//-------------------------------フラグ----------------------------------------------
+//-------------------------------フラグ類----------------------------------------------
 //メインウィンドウのwebcontents.DOMready回数カウンター
 //メインウィンドウを描写した回数
 let counter_DOMreadycounter = 0;
@@ -54,6 +53,8 @@ let portleturl;
 let timeinterval;
 //トレイ
 let tray;
+let userfunction_SetTrayIcon1 = {};
+let userfunction_SetTrayIcon2 = {};
 //-----------------------------グローバル変数終わり----------------------------------------
 
 //------------------------------主処理----------------------------------------
@@ -68,8 +69,6 @@ app.whenReady().then(() => {
   userfunction_createWindow();
   //トレイアイコンを作る
   userfunction_createTrayIcon();
-  //ダウンロードファイルの場所を指定する
-  userfunction_downloadcontrol();
 });
 
 //appのwill-quit等のイベントを捕まえて、アプリケーションを終了する
@@ -102,7 +101,7 @@ app.on("browser-window-focus", (event) => {
 //---------------------------主処理終わり--------------------------------------
 
 //------------------------------初期処理関数------------------------------
-function userfunction_initial() {
+const userfunction_initial = () => {
   //storeから読み出し
   const storedata = new store();
 
@@ -123,14 +122,14 @@ function userfunction_initial() {
     timeinterval = 15;
   }
   console.log("timeinterval=" + timeinterval);
-}
+};
 //--------------------------初期処理関数終わり---------------------------
 
 //---------------------------主画面生成関数-------------------------------------------------------
 //newBrowserdindowをwinで宣言し、win.loadfileでファイルを読みこむ関数。
 //これでappとbrowserwindowが成立させる
-function userfunction_createWindow() {
-  let win = new BrowserWindow({
+const userfunction_createWindow = () => {
+  const win = new BrowserWindow({
     width: 600,
     height: 420,
     //        frame:false,
@@ -203,6 +202,7 @@ function userfunction_createWindow() {
   });
 
   // //フォーカスを失ったら非表示
+  ////便利だが、フォーカスを失うと、appshowで前に出てこないのでとりあえずコメントアウト
   //   win.on('blur',()=>{
   //     console.log('windowcounter'+BrowserWindow.getAllWindows().length)
   //     //メインウィンドウしかない場合は、フォーカスを失った場合は消える
@@ -224,6 +224,35 @@ function userfunction_createWindow() {
     }
     //メニューから終了が呼び出されたときにはflag_DontPreventCloseは1なのでそのまま終了
   });
+
+  //electronはデフォルトでダウンロードダイアログを開くので、
+  //自動的に指定するフォルダにダウンロードしてそれを開くようにする
+  win.webContents.session.on(
+    "will-download",
+    (event, downloadItem, webContents) => {
+      const downloaddestintion =
+        Downloadfolder +
+        "\\" +
+        //一つのファイルにwill-downloadが複数発生することが有るので、ランダム文字列をファイル名の頭に
+        //付加してファイル存否判定をして、存在するファイルだけを開いていたが、とりあえず解決したのでコメントアウト
+        //Math.random().toString(32).substring(2) +
+        downloadItem.getFilename();
+      console.log(downloaddestintion);
+      downloadItem.setSavePath(downloaddestintion);
+      console.log("willdownload");
+      downloadItem.once("done", (event, state) => {
+        if (state === "completed") {
+          console.log("Download successfully");
+
+          if (fs.existsSync(downloaddestintion)) {
+            shell.openPath(downloaddestintion);
+          }
+        } else {
+          console.log(`Download failed: ${state}`);
+        }
+      });
+    }
+  );
 
   // 開いたときに最大化
   win.webContents.on(
@@ -269,11 +298,10 @@ function userfunction_createWindow() {
           console.log(url);
           win.loadURL(url, loadOptions); // 自動で既存の webContents をナビゲーションする
           win.maximize();
+          event.newGuest = win;
           //win.webContents.openDevTools();
           flag_KessaiWindowOpened = 1;
-
           //決裁画面など画面が閉じたら実行
-          //ここのwinは最大化して開いたwinであることに注意
           win.on("closed", () => {
             flag_KessaiWindowOpened = 0;
             //メインウィンドウを表示し、更新する
@@ -286,7 +314,6 @@ function userfunction_createWindow() {
             }
           });
         }
-        event.newGuest = win;
       }
     }
   );
@@ -311,15 +338,15 @@ function userfunction_createWindow() {
       userfunction_reloadWindow();
     }
   }
-}
+};
 
 //---------------------------主画面生成関数終わり------------------------------------------------
 
 //-------------------------メニュー・設定画面関係-------------------------------------------
 
 //メニュー作成
-function userfunction_createMenu() {
-  let menu_temp = [
+const userfunction_createMenu = () => {
+  const menu_temp = [
     {
       label: "   メニュー   ",
       submenu: [
@@ -354,14 +381,13 @@ function userfunction_createMenu() {
       role: "close",
     },
   ];
-  let menu = Menu.buildFromTemplate(menu_temp);
-
+  const menu = Menu.buildFromTemplate(menu_temp);
   Menu.setApplicationMenu(menu);
-}
+};
 
 //メニューから呼び出す設定画面
 function userfunction_createmenupage() {
-  let win = new BrowserWindow({
+  const win = new BrowserWindow({
     width: 400,
     height: 750,
     webPreferences: {
@@ -381,7 +407,7 @@ function userfunction_createmenupage() {
   win.webContents.on("dom-ready", () => {
     console.log("dom-ready-menu");
     const storedata = new store();
-    let sendingdata = {};
+    const sendingdata = {};
     sendingdata.id = storedata.get("id");
     sendingdata.pw = storedata.get("pw");
     sendingdata.ad = storedata.get("ad");
@@ -397,9 +423,8 @@ function userfunction_createmenupage() {
 }
 
 //トレイアイコンの作成
-function userfunction_createTrayIcon() {
-  let imgFilePath;
-  imgFilePath = __dirname + "/build/favicon.ico";
+const userfunction_createTrayIcon = () => {
+  const imgFilePath = path.join(app.getAppPath(), "/build/favicon.ico");
   const contextMenu = Menu.buildFromTemplate([
     {
       label: "表示",
@@ -424,68 +449,31 @@ function userfunction_createTrayIcon() {
     console.log("tray click");
     userfunction_ReloadandShowWindow();
   });
-}
+};
 
 //-------------------------メニュー・設定画面関係終わり-------------------------------------------
 
-//-------------------ダウンロード制御関係------------------------
-
-//ダウンロードを検知した場合にデフォルトのダウンロードフォルダにダウンロードしてシェルで開く
-//この処理がないとelectronの既定ではダウンロードダイアログが表示されてしまう。
-//もともと、決裁画面のwin.webcontents.session.onでコントロールしていたが、複数回発火するなど
-//不安定であったため、electronからsessionを引く形に切り替えた
-function userfunction_downloadcontrol() {
-  session.defaultSession.on(
-    "will-download",
-    function (event, downloadItem, webContents) {
-      let downloaddestintion =
-        Downloadfolder +
-        "\\" +
-        //一つのファイルにwill-downloadが複数発生することが有るので、ランダム文字列をファイル名の頭に
-        //付加してファイル存否判定をして、存在するファイルだけを開く
-        //様な処理をしていたが、session.defaultsession.onに移したので不要になった
-        //Math.random().toString(32).substring(2) +
-        downloadItem.getFilename();
-      console.log(downloaddestintion);
-      downloadItem.setSavePath(downloaddestintion);
-      console.log("session-willdownload");
-      downloadItem.once("done", (event, state) => {
-        if (state === "completed") {
-          console.log("Download successfully");
-
-          if (fs.existsSync(downloaddestintion)) {
-            shell.openPath(downloaddestintion);
-          }
-        } else {
-          console.log(`Download failed: ${state}`);
-        }
-      });
-    }
-  );
-}
-//-------------------ダウンロード制御関係　終わり------------------------
-
 //----------------------ウインドウ操作関係---------------------------------------------
 //メインウィンドウをリロードして表示(更新はdomreadyになったことがある場合のみ)
-function userfunction_ReloadandShowWindow() {
+const userfunction_ReloadandShowWindow = () => {
   userfunction_reloadWindow();
   userfunction_ShowWindow();
-}
+};
 
 //ウィンドウをリロード
 //DOMreadyになったことがない場合は設定画面に入力するパラメータがおかしいのでリロードしない
-function userfunction_reloadWindow() {
+const userfunction_reloadWindow = () => {
   if (counter_DOMreadycounter > 0) {
     window_main.loadURL(portleturl);
     console.log("reloaded");
   }
-}
+};
 
 //メインウィンドウを表示
-function userfunction_ShowWindow() {
+const userfunction_ShowWindow = () => {
   window_main.show();
   window_main.focus();
-}
+};
 
 //----------------------ウインドウ操作関係終わり-----------------------------------------
 
@@ -504,7 +492,6 @@ ipcMain.on("nakami_ohenji", (event, ohenji_sono1, ohenji_sono2) => {
     userfunction_ShowWindow();
   } else {
     //ここに決裁待ちがない場合の処理
-
     console.log("kessai nashi");
     //ここに決裁待ちが認証が成功した場合
     if (flag_portletauthsuccess > 0) {
@@ -542,13 +529,13 @@ ipcMain.on("ipc_setting_update", (event, param) => {
 //----------------------その他一般関数---------------------------------------------
 
 //フォルダにあるファイルを削除する
-function userfunction_deletefilesinfolder(dir) {
-  fs.readdir(dir, function (err, files) {
+const userfunction_deletefilesinfolder = (dir) => {
+  fs.readdir(dir, (err, files) => {
     if (err) {
       console.log(err);
     }
-    files.forEach(function (file) {
-      fs.unlink(`${dir}/${file}`, function (err) {
+    files.forEach((file) => {
+      fs.unlink(`${dir}/${file}`, (err) => {
         if (err) {
           console.log(err);
         }
@@ -556,4 +543,4 @@ function userfunction_deletefilesinfolder(dir) {
       });
     });
   });
-}
+};
