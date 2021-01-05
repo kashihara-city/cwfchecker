@@ -53,8 +53,6 @@ let portleturl;
 let timeinterval;
 //トレイ
 let tray;
-let userfunction_SetTrayIcon1 = {};
-let userfunction_SetTrayIcon2 = {};
 //-----------------------------グローバル変数終わり----------------------------------------
 
 //------------------------------主処理----------------------------------------
@@ -424,7 +422,7 @@ function userfunction_createmenupage() {
 
 //トレイアイコンの作成
 const userfunction_createTrayIcon = () => {
-  const imgFilePath = path.join(app.getAppPath(), "/build/favicon.ico");
+  const imgFilePath = path.join(app.getAppPath(), "favicon.ico");
   const contextMenu = Menu.buildFromTemplate([
     {
       label: "表示",
