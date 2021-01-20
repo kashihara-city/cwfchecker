@@ -277,13 +277,13 @@ const userfunction_createWindow = () => {
             worldSafeExecuteJavaScript: true,
             nodeIntegration: false,
             contextIsolation: true,
-            show: false,
+            //show: false,
             //chromiumのデフォルトで開く。これを指定しないと、electronのプロキシオブジェクトになるので、javascriptの機能が制限され
             //て色々不具合が出る
             nativeWindowOpen: true,
           },
         });
-        win.once("ready-to-show", () => win.show());
+        //win.once("ready-to-show", () => win.show());
         if (!options.webContents) {
           const loadOptions = {
             httpReferrer: referrer,
