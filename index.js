@@ -398,7 +398,7 @@ function userfunction_createmenupage() {
   });
 
   //ローカルのファイルを読み込む場合
-  win.loadFile("index.html");
+  win.loadFile("settings.html");
   //win.webContents.openDevTools();
 
   //ウェブコンテンツのイベントもこのオブジェクトを使う。
