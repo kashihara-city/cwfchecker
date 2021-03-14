@@ -9,13 +9,6 @@
   "keywords": [],
   "author": "htajima",
   "license": "ISC",
-  "devDependencies": {
-    "electron": "^11.1.1",
-    "electron-store": "^6.0.1"
-  },
-  "Dependencies": {
-    "electron-store": "^6.0.1"
-  },
   "build": {
     "productName": "CreateWebFlowChecker",
     "copyright": "Copyright 2020 ${author}",
@@ -37,5 +30,14 @@
       "allowToChangeInstallationDirectory": true,
       "runAfterFinish": false
     }
+  },
+  "Dependencies": {
+    "electron-store": "^6.0.1",
+    "keytar": "^7.4.0"
+  },
+  "devDependencies": {
+    "electron": "^12.0.0",
+    "electron-store": "^7.0.2",
+    "keytar": "^7.4.0"
   }
 }

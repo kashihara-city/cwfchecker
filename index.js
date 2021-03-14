@@ -12,8 +12,9 @@ const {
 const path = require("path");
 const store = require("electron-store");
 const fs = require("fs");
+const keytar = require("keytar");
 
-console.log("hoge"); //コマンドプロンプトに出力される
+console.log("hoge"); //コンソールに出力される
 
 //-------------------------------アプリケーション設定-------------------
 //二重起動の防止
@@ -47,6 +48,8 @@ let flag_portletauthsuccess = 0;
 
 //メインウィンドウ操作用
 let window_main;
+//アクセスパスワード
+let cwfpassword;
 //ポートレットアクセス先
 let portleturl;
 //設定画面で設定する更新間隔
@@ -59,14 +62,20 @@ let tray;
 
 //whenreadyはelectronアプリケーションを起動し、初期化される際に実行される非同期処理(promise)。
 app.whenReady().then(() => {
-  //初期処理
-  userfunction_initial();
-  //メニュー作成
-  userfunction_createMenu();
-  //メインウィンドウオープン
-  userfunction_createWindow();
-  //トレイアイコンを作る
-  userfunction_createTrayIcon();
+  const storedata = new store();
+  //keytar.getPasswordも非同期
+  const secret = keytar.getPassword("cwfchecker", storedata.get("id"));
+  secret.then((userpw) => {
+    //初期処理
+    cwfpassword = userpw;
+    userfunction_initial(userpw);
+    //メニュー作成
+    userfunction_createMenu();
+    //メインウィンドウオープン
+    userfunction_createWindow();
+    //トレイアイコンを作る
+    userfunction_createTrayIcon();
+  });
 });
 
 //appのwill-quit等のイベントを捕まえて、アプリケーションを終了する
@@ -99,9 +108,14 @@ app.on("browser-window-focus", (event) => {
 //---------------------------主処理終わり--------------------------------------
 
 //------------------------------初期処理関数------------------------------
-const userfunction_initial = () => {
-  //storeから読み出し
+const userfunction_initial = (userpw) => {
   const storedata = new store();
+  //既存のstoreにPWが入ってる場合は、keytarに格納してダミーに変換
+  if (storedata.get("pw") !== "dummy" && storedata.get("id") !== "undefined") {
+    keytar.setPassword("cwfchecker", storedata.get("id"), storedata.get("pw"));
+    storedata.set("pw", "dummy");
+    console.log("dummy syori");
+  }
 
   //browserwindow用のURLを組み立てる
   portleturl =
@@ -109,11 +123,10 @@ const userfunction_initial = () => {
     "?view=recv&loginid=" +
     encodeURIComponent(storedata.get("id")) +
     "&pwd=" +
-    encodeURIComponent(storedata.get("pw")) +
+    encodeURIComponent(userpw) +
     "&ldapsvr=" +
     encodeURIComponent(storedata.get("ad"));
   console.log(portleturl);
-
   //intervalが設定されてないか、15分以下の場合は場合は15分にする
   timeinterval = storedata.get("interval");
   if (isNaN(timeinterval) || timeinterval < 15) {
@@ -150,7 +163,7 @@ const userfunction_createWindow = () => {
 
   //URLを読み込む場合
   win.loadURL(portleturl);
-  //"http://54.250.92.171:8080/XFV20/portlet/wfportlet.jsp?view=recv&loginid=A10021&pwd=9999&ldapsvr="
+  //"http://XX.XX.XX.XX:8080/XFV20/portlet/wfportlet.jsp?view=recv&loginid=XXXXXX&pwd=XXXXX&ldapsvr="
 
   //テキスト変数（html）を直接読み込む場合
   //win.loadURL('data:text/html;charset=utf-8,' + html);
@@ -161,7 +174,7 @@ const userfunction_createWindow = () => {
   //ウィンドウを表示したり閉じたりするショートカットキーを登録する
   globalShortcut.register("F3", () => {
     console.log(
-      "GSpressed" +
+      "GlobalShortcutPressed" +
         win.isFocused() +
         win.isVisible() +
         BrowserWindow.getAllWindows().length
@@ -277,13 +290,11 @@ const userfunction_createWindow = () => {
             worldSafeExecuteJavaScript: true,
             nodeIntegration: false,
             contextIsolation: true,
-            //show: false,
             //chromiumのデフォルトで開く。これを指定しないと、electronのプロキシオブジェクトになるので、javascriptの機能が制限され
             //て色々不具合が出る
             nativeWindowOpen: true,
           },
         });
-        //win.once("ready-to-show", () => win.show());
         if (!options.webContents) {
           const loadOptions = {
             httpReferrer: referrer,
@@ -407,7 +418,7 @@ function userfunction_createmenupage() {
     const storedata = new store();
     const sendingdata = {};
     sendingdata.id = storedata.get("id");
-    sendingdata.pw = storedata.get("pw");
+    sendingdata.pw = cwfpassword;
     sendingdata.ad = storedata.get("ad");
     sendingdata.cwfaddress = storedata.get("cwfaddress");
     sendingdata.interval = storedata.get("interval");
@@ -509,7 +520,9 @@ ipcMain.on("ipc_setting_update", (event, param) => {
   console.log(param.id);
   const storedata = new store();
   storedata.set("id", param.id);
-  storedata.set("pw", param.pw);
+  //  storedata.set("pw", param.pw);
+  keytar.setPassword("cwfchecker", param.id, param.pw);
+  cwfpassword = param.pw;
   storedata.set("ad", param.ad);
   storedata.set("cwfaddress", param.cwfadress);
   storedata.set("interval", param.interval);

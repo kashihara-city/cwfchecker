@@ -20,6 +20,7 @@
 
 - electron
 - electron-store
+- keytar
 
 ## ライセンス等
 
