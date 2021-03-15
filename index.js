@@ -400,7 +400,7 @@ const userfunction_createMenu = () => {
 //メニューから呼び出す設定画面
 function userfunction_createmenupage() {
   const win = new BrowserWindow({
-    width: 400,
+    width: 600,
     height: 750,
     webPreferences: {
       //nodeIntegration: true
