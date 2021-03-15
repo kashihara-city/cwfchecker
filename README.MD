@@ -30,8 +30,8 @@
 
 1. node.js をインストールします。
 1. mkdir hogehoge
+1. hogehoge にソースコードをコピーします
 1. cd hogehoge
-1. npm i -D electron
-1. npm i -D electron-store
+1. npm install
 1. npx electron .
 1. パッケージ化・組織内で配布する場合は、electron-builder 等を使用します。
