@@ -45,7 +45,6 @@ let flag_KessaiWindowOpened = 0;
 let counter_kessaikensu = 0;
 //ポートレットへの認証が成功したかどうか(searchwordbの数)
 let flag_portletauthsuccess = 0;
-
 //メインウィンドウ操作用
 let window_main;
 //アクセスパスワード
@@ -63,8 +62,16 @@ let tray;
 //whenreadyはelectronアプリケーションを起動し、初期化される際に実行される非同期処理(promise)。
 app.whenReady().then(() => {
   const storedata = new store();
-  //keytar.getPasswordも非同期
-  const secret = keytar.getPassword("cwfchecker", storedata.get("id"));
+
+  //keytar.getpasswordのためのIDを準備
+  let storeid = "hoge";
+  if (storedata.get("id") !== undefined) {
+    storeid = storedata.get("id");
+  }
+  console.log(storeid);
+
+  //keytar.getPasswordで保存されているパスワードを取得（非同期）
+  const secret = keytar.getPassword("cwfchecker", storeid);
   secret.then((userpw) => {
     //初期処理
     cwfpassword = userpw;
@@ -112,13 +119,13 @@ const userfunction_initial = (userpw) => {
   const storedata = new store();
 
   //既存のstoreにPWが入ってる場合は、keytarに格納、storeのpwはダミーに置換
-  if (storedata.get("pw") !== "dummy" && storedata.get("id") !== "undefined") {
-    cwfpassword = storedata.get("pw");
-    userpw = cwfpassword;
-    keytar.setPassword("cwfchecker", storedata.get("id"), cwfpassword);
-    storedata.set("pw", "dummy");
-    console.log("dummy syori");
-  }
+  // if (storedata.get("pw") !== "dummy" && storedata.get("id") !== "undefined") {
+  //   cwfpassword = storedata.get("pw");
+  //   userpw = cwfpassword;
+  //   keytar.setPassword("cwfchecker", storedata.get("id"), cwfpassword);
+  //   storedata.set("pw", "dummy");
+  //   console.log("dummy syori");
+  // }
 
   //browserwindow用のURLを組み立てる
   portleturl =
