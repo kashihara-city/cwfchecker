@@ -565,3 +565,6 @@ const userfunction_deletefilesinfolder = (dir) => {
     });
   });
 };
+
+//credit
+// v0.0.1 2021.4.21 release / Hiroshi Tajima @ Kashihara City
