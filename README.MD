@@ -41,7 +41,7 @@
 
 ## 動作イメージ
 
-    ![capture](images/capture.gif)
+![moveimage](images/capture.gif)
 
 ## 使用方法
 
