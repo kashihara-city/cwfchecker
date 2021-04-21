@@ -14,7 +14,7 @@
     "copyright": "Copyright 2020 ${author}",
     "appId": "com.electron.cwfchecker",
     "win": {
-      "icon": "build/favicon3.ico",
+      "icon": "favicon.ico",
       "target": [
         {
           "target": "nsis",
@@ -31,14 +31,11 @@
       "runAfterFinish": false
     }
   },
-  "Dependencies": {
-    "electron-store": "^6.0.1",
-    "keytar": "^7.4.0"
-  },
   "devDependencies": {
-    "electron": "^11.3.0",
-    "electron-rebuild": "^2.3.5",
-    "electron-store": "^7.0.2",
-    "keytar": "^7.4.0"
+    "electron": "^11.4.3"
+  },
+  "dependencies": {
+    "electron-store": "^8.0.0",
+    "keytar": "^7.6.0"
   }
 }
