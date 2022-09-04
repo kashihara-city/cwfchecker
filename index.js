@@ -16,35 +16,45 @@ const keytar = require("keytar");
 
 console.log("hoge"); //コンソールに出力される
 
-//-------------------------------アプリケーション設定-------------------------------
+//-------------------------------アプリケーション設定ここから-------------------------------
 //二重起動の防止
 const doubleboot = app.requestSingleInstanceLock();
 if (!doubleboot) {
   app.quit();
 }
+//  Passthrough is not supported, GL is disabled, ANGLE isエラーを表示させない
+app.disableHardwareAcceleration();
+//-------------------------------アプリケーション設定終わり-------------------------------
 
-//-------------------------------グローバル変数又は変更可能性の高い設定-------------------------------
-//-------------------------------ポートレットから検索する文字列設定-------------------------------
+//-------------------------------グローバル変数又は変更可能性の高い設定ここから-------------------------------
+//-------------------------------ポートレットから検索する文字列設定
 //決裁がある場合に登場する文字列
 const SearchWord = "anchor anchor-primary";
 //ポートレット表示が正常に表示された場合に必ずある文字列（エラー判定用）
 const SearchWordb = "<!-- 認証成功 -->";
 //添付ファイルなどのダウンロード先
 const Downloadfolder = app.getPath("documents") + "\\cwf_downloads";
-//-------------------------------フラグ類----------------------------------------------
-//メインウィンドウのwebcontents.DOMready回数カウンター
-//メインウィンドウを描写した回数
-let counter_DOMreadycounter = 0;
-//メインウィンドウのCloseを止めない（通常はcloseをpreventしてhideするが、メニューからアプリ終了を選んだ場合などに1を立てる）
-let flag_DontPreventClose = 0;
-//設定画面が開かれた
-let flag_SettingWindowOpened = 0;
-//決裁画面が開かれた
-let flag_KessaiWindowOpened = 0;
-//現在決裁を求められている件数（searchwordの数）
-let counter_kessaikensu = 0;
-//ポートレットへの認証が成功したかどうか(searchwordbの数)
-let flag_portletauthsuccess = 0;
+//-------------------------------フラグ類
+const flag = {
+  //メインウィンドウのCloseを止めない（通常はcloseをpreventしてhideするが、メニューからアプリ終了を選んだ場合などに1を立てる）
+  DontPreventClose: 0,
+  //設定画面が開かれた
+  SettingWindowOpened: 0,
+  //決裁画面が開かれた
+  KessaiWindowOpened: 0,
+  //ポートレットへの認証が成功したかどうか(searchwordbの数)
+  portletauthsuccess: 0,
+};
+//-------------------------------カウンタ類
+const counter = {
+  //メインウィンドウのwebcontents.DOMready回数カウンター
+  //メインウィンドウを描写した回数
+  DOMreadycounter: 0,
+  //現在決裁を求められている件数（searchwordの数）
+  kessaikensu: 0,
+};
+
+//-------------------------------その他グローバル変数
 //メインウィンドウ操作用
 let window_main;
 //アクセスパスワード
@@ -55,7 +65,7 @@ let portleturl;
 let timeinterval;
 //トレイ
 let tray;
-//-------------------------------グローバル変数終わり-------------------------------
+//-------------------------------グローバル変数又は変更可能性の高い設定終わり-------------------------------
 
 //-------------------------------主処理----------------------------------------
 
@@ -104,6 +114,7 @@ app.on("window-all-closed", () => {
 //通常はここに初期化イベントを書く
 app.on("will-finish-launching", () => {
   console.log("will-finish-launching");
+  // app.disableHardwareAcceleration();
 });
 
 //ウィンドウがフォーカスされたイベント
@@ -148,18 +159,13 @@ const userfunction_initial = (userpw) => {
 
 //-------------------------------主画面生成関数-------------------------------
 //newBrowserdindowをwinで宣言し、win.loadfileでファイルを読みこむ関数。
-//これでappとbrowserwindowが成立させる
+//これでappとbrowserwindowを成立させる
 const userfunction_createWindow = () => {
   const win = new BrowserWindow({
     width: 600,
     height: 420,
-    //        frame:false,
-    //        titleBarStyle: 'hidden',
     //決裁画面を開いたときに閉じれなくなるので、フレームレス等はできない
     webPreferences: {
-      worldSafeExecuteJavaScript: true,
-      nodeIntegration: false,
-      contextIsolation: true,
       preload: path.join(app.getAppPath(), "preloadcwf.js"),
     },
   });
@@ -205,8 +211,8 @@ const userfunction_createWindow = () => {
   //主画面のwinはfunctionの中にあるので、このイベントは基本的にはfunctionの中に書かないと動かない
   //ウェブコンテンツのイベントもこのオブジェクトを使う。
   win.webContents.on("dom-ready", () => {
-    counter_DOMreadycounter++;
-    console.log("dom-ready" + counter_DOMreadycounter);
+    counter.DOMreadycounter++;
+    console.log("dom-ready" + counter.DOMreadycounter);
 
     //preloadで読んだJSで件数などを問い合わせ
     win.webContents.send("nakami_okure", SearchWord, SearchWordb);
@@ -237,13 +243,13 @@ const userfunction_createWindow = () => {
 
   //閉じちゃったらとりあえず隠す
   win.on("close", (event) => {
-    //デフォルト動作（flag_DontPreventCloseが0）
-    if (flag_DontPreventClose === 0) {
+    //デフォルト動作（flag.DontPreventCloseが0）
+    if (flag.DontPreventClose === 0) {
       event.preventDefault();
       console.log("close prevented!!");
       win.hide();
     }
-    //メニューから終了が呼び出されたときにはflag_DontPreventCloseは1なのでそのまま終了
+    //メニューから終了が呼び出されたときにはflag.DontPreventCloseは1なのでそのまま終了
   });
 
   //electronはデフォルトでダウンロードダイアログを開くので、
@@ -275,67 +281,58 @@ const userfunction_createWindow = () => {
     }
   );
 
-  // 開いたときに最大化
-  win.webContents.on(
-    "new-window",
-    (
-      event,
-      url,
-      frameName,
-      disposition,
-      options,
-      additionalFeatures,
-      referrer,
-      postBody
-    ) => {
-      event.preventDefault();
-      //もしログインウィンドウを開く場合は、規定のブラウザで開く（electronで申請フォームを開くと
-      //申請フォーム側のサブフォーム等がうまく動かないので）
-      if (url.slice(-12) === "/XFV20/login") {
-        shell.openExternal(url);
-      } else {
-        const win = new BrowserWindow({
-          webContents: options.webContents, // あれば既存の webContents を使用する
-          webPreferences: {
-            worldSafeExecuteJavaScript: true,
-            nodeIntegration: false,
-            contextIsolation: true,
-            //chromiumのデフォルトで開く。これを指定しないと、electronのプロキシオブジェクトになるので、javascriptの機能が制限され
-            //て色々不具合が出る
-            nativeWindowOpen: true,
-          },
-        });
-        if (!options.webContents) {
-          const loadOptions = {
-            httpReferrer: referrer,
-          };
-          if (postBody != null) {
-            const { data, contentType, boundary } = postBody;
-            loadOptions.postData = postBody.data;
-            loadOptions.extraHeaders = `content-type: ${contentType}; boundary=${boundary}`;
-          }
-          console.log(url);
-          win.loadURL(url, loadOptions); // 自動で既存の webContents をナビゲーションする
-          win.maximize();
-          event.newGuest = win;
-          //win.webContents.openDevTools();
-          flag_KessaiWindowOpened = 1;
-          //決裁画面など画面が閉じたら実行
-          win.on("closed", () => {
-            flag_KessaiWindowOpened = 0;
-            //メインウィンドウを表示し、更新する
-            if (BrowserWindow.getAllWindows().length === 1) {
-              userfunction_ReloadandShowWindow();
-              //なるべく添付ファイルのダウンロードフォルダのファイルは消す
-              if (fs.existsSync(Downloadfolder)) {
-                userfunction_deletefilesinfolder(Downloadfolder);
-              }
-            }
-          });
-        }
+  // レンダラーから画面を開く（ログイン画面・決裁画面を開く）処理
+  // win.webcontents.on のnewwindowの非推奨化に伴い書き換え
+  win.webContents.setWindowOpenHandler(({ url, referrer, postBody }) => {
+    //もしログインウィンドウを開く場合は、規定のブラウザで開く（electronで申請フォームを開くと
+    //申請フォーム側のサブフォーム等がうまく動かないので）
+    if (url.slice(-12) === "/XFV20/login") {
+      shell.openExternal(url);
+      return { action: "deny" };
+    } else {
+      // 決裁画面を開く処理
+
+      // レンダラーから直接開く場合
+      // return {
+      // action: "allow",
+      // overrideBrowserWindowOptions: {
+      //   fullscreen: true,
+      // },
+      // };
+
+      // winkessaiを作る場合;
+      const winkessai = new BrowserWindow();
+      const loadOptions = {};
+      if (referrer != null) {
+        loadOptions.httpReferrer = referrer;
       }
+      if (postBody != null) {
+        const { data, contentType, boundary } = postBody;
+        loadOptions.postData = data;
+        loadOptions.extraHeaders = `content-type: ${contentType}; boundary=${boundary}`;
+      }
+      console.log(loadOptions);
+      winkessai.loadURL(url, loadOptions);
+      winkessai.maximize();
+
+      flag.KessaiWindowOpened = 1;
+      //決裁画面など画面が閉じたら実行
+      winkessai.on("closed", () => {
+        console.log("winkessaiclosed");
+        flag.KessaiWindowOpened = 0;
+        //メインウィンドウを表示し、更新する
+        if (BrowserWindow.getAllWindows().length === 1) {
+          userfunction_ReloadandShowWindow();
+          //なるべく添付ファイルのダウンロードフォルダのファイルは消す
+          if (fs.existsSync(Downloadfolder)) {
+            userfunction_deletefilesinfolder(Downloadfolder);
+          }
+        }
+      });
+
+      return { action: "deny" };
     }
-  );
+  });
 
   //画面左上に表示する
   win.setPosition(0, 0, false);
@@ -347,9 +344,9 @@ const userfunction_createWindow = () => {
   function kessaicount() {
     //Domreadycounterが1超えかつ設定画面と決裁画面が閉じてないと本体処理を開始しない。
     if (
-      counter_DOMreadycounter > 0 &&
-      flag_SettingWindowOpened === 0 &&
-      flag_KessaiWindowOpened === 0
+      counter.DOMreadycounter > 0 &&
+      flag.SettingWindowOpened === 0 &&
+      flag.KessaiWindowOpened === 0
     ) {
       //非同期関数でもうちょっとまともに書けるはずだが今はこれしかかけない
       //この関数でメインウィンドウをリロードすると、自動的にポートレットの中身をwin.webcontentsのon domreadyで問い合わせる。
@@ -374,10 +371,10 @@ const userfunction_createMenu = () => {
           click: () => {
             console.log("New menu.");
             //設定画面を開いているときは二重に開かない
-            if (flag_SettingWindowOpened < 1) {
+            if (flag.SettingWindowOpened < 1) {
               userfunction_createmenupage();
             }
-            flag_SettingWindowOpened = 1;
+            flag.SettingWindowOpened = 1;
           },
         },
         { type: "separator" },
@@ -385,7 +382,7 @@ const userfunction_createMenu = () => {
           label: "アプリ終了",
           click: () => {
             console.log("Quit menu.");
-            flag_DontPreventClose = 1;
+            flag.DontPreventClose = 1;
             app.quit();
           },
         },
@@ -406,24 +403,20 @@ const userfunction_createMenu = () => {
 
 //メニューから呼び出す設定画面
 function userfunction_createmenupage() {
-  const win = new BrowserWindow({
+  const winmenu = new BrowserWindow({
     width: 600,
     height: 750,
     webPreferences: {
-      //nodeIntegration: true
-      worldSafeExecuteJavaScript: true,
-      nodeIntegration: false,
-      contextIsolation: true,
       preload: path.join(app.getAppPath(), "preloadsetting.js"),
     },
   });
 
   //ローカルのファイルを読み込む場合
-  win.loadFile("settings.html");
-  //win.webContents.openDevTools();
+  winmenu.loadFile("settings.html");
+  //winmenu.webContents.openDevTools();
 
   //ウェブコンテンツのイベントもこのオブジェクトを使う。
-  win.webContents.on("dom-ready", () => {
+  winmenu.webContents.on("dom-ready", () => {
     console.log("dom-ready-menu");
     const storedata = new store();
     const sendingdata = {};
@@ -433,11 +426,11 @@ function userfunction_createmenupage() {
     sendingdata.cwfaddress = storedata.get("cwfaddress");
     sendingdata.interval = storedata.get("interval");
     //    console.log(sendingdata);
-    win.webContents.send("imano_settei_ha_koredesu", sendingdata);
+    winmenu.webContents.send("imano_settei_ha_koredesu", sendingdata);
   });
 
-  win.on("close", () => {
-    flag_SettingWindowOpened = 0;
+  winmenu.on("close", () => {
+    flag.SettingWindowOpened = 0;
   });
 }
 
@@ -456,7 +449,7 @@ const userfunction_createTrayIcon = () => {
       label: "電子決裁確認アプリ終了",
       click: () => {
         console.log("Quit menu.");
-        flag_DontPreventClose = 1;
+        flag.DontPreventClose = 1;
         app.quit();
       },
     },
@@ -482,7 +475,7 @@ const userfunction_ReloadandShowWindow = () => {
 //ウィンドウをリロード
 //DOMreadyになったことがない場合は設定画面に入力するパラメータがおかしいのでリロードしない
 const userfunction_reloadWindow = () => {
-  if (counter_DOMreadycounter > 0) {
+  if (counter.DOMreadycounter > 0) {
     window_main.loadURL(portleturl);
     console.log("reloaded");
   }
@@ -502,18 +495,18 @@ const userfunction_ShowWindow = () => {
 ipcMain.on("nakami_ohenji", (event, ohenji_sono1, ohenji_sono2) => {
   console.log("kessaikensuha" + ohenji_sono1);
   console.log("ninsyokensuha" + ohenji_sono2);
-  counter_kessaikensu = ohenji_sono1;
-  flag_portletauthsuccess = ohenji_sono2;
+  counter.kessaikensu = ohenji_sono1;
+  flag.portletauthsuccess = ohenji_sono2;
 
-  if (counter_kessaikensu > 0) {
+  if (counter.kessaikensu > 0) {
     //ここに決裁待ちが１件以上有る場合の処理を書く
-    console.log("kessai ari" + counter_kessaikensu + "ken");
+    console.log("kessai ari" + counter.kessaikensu + "ken");
     userfunction_ShowWindow();
   } else {
     //ここに決裁待ちがない場合の処理
     console.log("kessai nashi");
     //ここに決裁待ちが認証が成功した場合
-    if (flag_portletauthsuccess > 0) {
+    if (flag.portletauthsuccess > 0) {
       //ここに決裁待ちはないが認証が成功した場合の処理
       console.log("portlet success");
       //win.hide();
@@ -568,3 +561,4 @@ const userfunction_deletefilesinfolder = (dir) => {
 
 //credit
 // v0.0.1 2021.4.21 release / Hiroshi Tajima @ Kashihara City
+// v0.0.2 2022.9.4

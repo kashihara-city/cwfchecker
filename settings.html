@@ -1,36 +1,40 @@
 <!DOCTYPE html>
 <html lang="ja">
-<title>設定画面</title>
-<head>
-  <meta charset="UTF-8">
-    <link rel="stylesheet" href="./lib/bootstrap.min.css">
-    <script src="./lib/jquery-3.5.1.slim.min.js"></script>
-    <script src="./lib/popper.min.js"></script>
-    <script src="./lib/bootstrap.min.js"></script>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./lib/settings.css" />
+    <title>設定画面</title>
+  </head>
 
-  <div class="container">
-    <p><button class="btn btn-primary"onclick="save()">設定反映</button></p>
-    <p>ID<input class="form-control" id="input1"></input></p>
-    <p>PW<input class="form-control" id="input2" type="password"></input></p>
-    <p>AD SERVER<input class="form-control" id="input3"></input></p>
-    <p>CWFAddress<input class="form-control" id="input4"></input></p>
-    <p>確認間隔(分)<input class="form-control" id="input5"></input></p>
-  </div>
+  <body>
+    <div class="container">
+      <h3>設定情報</h3>
+      <label for="input1">ID</label>
+      <input class="fminput" id="input1" type="text" />
+      <label for="input2">PW</label>
+      <input class="fminput" id="input2" type="password" />
+      <label for="input3">AD Server</label>
+      <input class="fminput" id="input3" type="text" />
+      <label for="input4">CWFAddress(サーバURL)</label>
+      <input class="fminput" id="input4" type="text" />
+      <label for="input5">確認間隔（分）</label>
+      <input class="fminput" id="input5" type="text" />
+      <a href="" class="btn" onclick="save()">設定反映</a>
+    </div>
 
-
-  <script>
-      function save(){
-        let sendingmessage={}
-        sendingmessage.id=document.querySelector('#input1').value
-        sendingmessage.pw=document.querySelector('#input2').value
-        sendingmessage.ad=document.querySelector('#input3').value
-        sendingmessage.cwfadress=document.querySelector('#input4').value
-        sendingmessage.interval=document.querySelector('#input5').value
+    <script>
+      function save() {
+        const sendingmessage = {
+          id: document.querySelector("#input1").value,
+          pw: document.querySelector("#input2").value,
+          ad: document.querySelector("#input3").value,
+          cwfadress: document.querySelector("#input4").value,
+          interval: document.querySelector("#input5").value,
+        };
         window.api.Settingupdate(sendingmessage);
-        }
-      </script>
-
-</body>
+      }
+    </script>
+  </body>
 </html>

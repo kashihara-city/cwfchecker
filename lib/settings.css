@@ -1,0 +1,42 @@
+* {
+  margin: 0 auto;
+  padding: 0;
+  box-sizing: border-box;
+  list-style: none;
+  text-decoration: none;
+}
+.container {
+  width: 90%;
+}
+h3 {
+  padding: 20px;
+  background-color: #c2c2c2;
+  margin: 20px;
+  text-align: center;
+}
+
+.fminput {
+  width: 100%;
+  border: none;
+  outline: none;
+  border-bottom: 3px solid #c2c2c2;
+  margin-bottom: 40px;
+  font-size: larger;
+}
+.fminput:focus {
+  border-bottom: 3px solid #000;
+}
+
+a.btn {
+  padding: 1rem 4rem;
+  border: 2px solid #000;
+  border-radius: 0;
+  background: #fff;
+  transition: 0.2s;
+  color: black;
+}
+
+a.btn:hover {
+  color: #fff;
+  background: #000;
+}
