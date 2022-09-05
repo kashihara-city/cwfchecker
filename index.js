@@ -8,6 +8,7 @@ const {
   globalShortcut,
   shell,
   ipcMain,
+  dialog,
 } = require("electron");
 const path = require("path");
 const store = require("electron-store");
@@ -314,6 +315,28 @@ const userfunction_createWindow = () => {
       console.log(loadOptions);
       winkessai.loadURL(url, loadOptions);
       winkessai.maximize();
+      // v5.3.0で、フォーム離脱警告のためにbeforeunloadがpreventされるようになったことへの対策
+      // 決裁画面を閉じれない、添付ファイルのダウンロードができない等が発生するため
+      winkessai.webContents.on("will-prevent-unload", (event) => {
+        event.preventDefault();
+      });
+      // システム代替の警告画面を出す場合。ただし添付ファイル表示時にも警告が表示されるので実用的でない
+      // winkessai.webContents.on("will-prevent-unload", (event) => {
+      //   const choice = dialog.showMessageBoxSync(winkessai, {
+      //     type: "question",
+      //     buttons: ["Leave", "Stay"],
+      //     title: "Do you want to leave this site?",
+      //     message: "Changes you made may not be saved.",
+      //     defaultId: 0,
+      //     cancelId: 1,
+      //   });
+      //   const leave = choice === 0;
+      //   if (leave) {
+      //     event.preventDefault();
+      //   }
+      // });
+
+      // winkessai.webContents.openDevTools();
 
       flag.KessaiWindowOpened = 1;
       //決裁画面など画面が閉じたら実行
