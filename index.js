@@ -73,7 +73,7 @@ let tray;
 //whenreadyはelectronアプリケーションを起動し、初期化される際に実行される非同期処理(promise)。
 //app.on("ready",()=> と書きたくなるが、このイベントは２度と発火しないので、whenreadyが推奨されている
 app.whenReady().then(async () => {
-  //初期処理
+  //初期処理 keytarの処理があるので非同期
   await userfunction_initial();
   //メニュー作成
   userfunction_createMenu();
