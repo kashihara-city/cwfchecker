@@ -71,29 +71,16 @@ let tray;
 //-------------------------------主処理----------------------------------------
 
 //whenreadyはelectronアプリケーションを起動し、初期化される際に実行される非同期処理(promise)。
-app.whenReady().then(() => {
-  const storedata = new store();
-
-  //keytar.getpasswordのためのIDを準備
-  let storeid = "hoge";
-  if (storedata.get("id") !== undefined) {
-    storeid = storedata.get("id");
-  }
-  console.log(storeid);
-
-  //keytar.getPasswordで保存されているパスワードを取得（非同期）
-  const secret = keytar.getPassword("cwfchecker", storeid);
-  secret.then((userpw) => {
-    //初期処理
-    cwfpassword = userpw;
-    userfunction_initial(userpw);
-    //メニュー作成
-    userfunction_createMenu();
-    //メインウィンドウオープン
-    userfunction_createWindow();
-    //トレイアイコンを作る
-    userfunction_createTrayIcon();
-  });
+//app.on("ready",()=> と書きたくなるが、このイベントは２度と発火しないので、whenreadyが推奨されている
+app.whenReady().then(async () => {
+  //初期処理
+  await userfunction_initial();
+  //メニュー作成
+  userfunction_createMenu();
+  //メインウィンドウオープン
+  userfunction_createWindow();
+  //トレイアイコンを作る
+  userfunction_createTrayIcon();
 });
 
 //appのwill-quit等のイベントを捕まえて、アプリケーションを終了する
@@ -127,8 +114,22 @@ app.on("browser-window-focus", (event) => {
 //-------------------------------主処理終わり-------------------------------
 
 //-------------------------------初期処理関数-------------------------------
-const userfunction_initial = (userpw) => {
+// グローバル変数 cwfpasswordとportleturlを生成する関数
+const userfunction_initial = async () => {
   const storedata = new store();
+
+  //keytar.getpasswordのためのIDを準備
+  let storeid;
+  if (storedata.get("id") !== undefined) {
+    storeid = storedata.get("id");
+  } else {
+    storeid = "nashi";
+  }
+
+  //keytar.getPasswordで保存されているパスワードを取得（非同期）
+  cwfpassword = await keytar.getPassword("cwfchecker", storeid);
+  console.log(storeid);
+  console.log(cwfpassword);
 
   //既存のstoreにPWが入ってる場合は、keytarに格納、storeのpwはダミーに置換
   // if (storedata.get("pw") !== "dummy" && storedata.get("id") !== "undefined") {
@@ -145,7 +146,7 @@ const userfunction_initial = (userpw) => {
     "?view=recv&loginid=" +
     encodeURIComponent(storedata.get("id")) +
     "&pwd=" +
-    encodeURIComponent(userpw) +
+    encodeURIComponent(cwfpassword) +
     "&ldapsvr=" +
     encodeURIComponent(storedata.get("ad"));
   console.log(portleturl);
@@ -301,7 +302,7 @@ const userfunction_createWindow = () => {
       // },
       // };
 
-      // winkessaiを作る場合;
+      // レンダラーから開くのを止めて、新たにwinkessaiを作る場合;
       const winkessai = new BrowserWindow();
       const loadOptions = {};
       if (referrer != null) {
@@ -553,7 +554,7 @@ ipcMain.on("ipc_setting_update", (event, param) => {
   storedata.set("cwfaddress", param.cwfadress);
   storedata.set("interval", param.interval);
   console.log(storedata.get("id"));
-  console.log(storedata.get("pw"));
+  console.log(cwfpassword);
   console.log(storedata.get("ad"));
   console.log(storedata.get("cwfaddress"));
   console.log(storedata.get("interval"));
@@ -584,4 +585,4 @@ const userfunction_deletefilesinfolder = (dir) => {
 
 //credit
 // v0.0.1 2021.4.21 release / Hiroshi Tajima @ Kashihara City
-// v0.0.2 2022.9.4
+// v0.0.2 2022.9.6
