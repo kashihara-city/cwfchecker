@@ -120,25 +120,22 @@ const userfunction_initial = async () => {
 
   //keytar.getpasswordのためのIDを準備
   let storeid;
-  if (storedata.get("id") !== undefined) {
+  // storedataに値があって、かつ空文字列等でなければそれを代入
+  if (storedata.has("id") && storedata.get("id")) {
     storeid = storedata.get("id");
   } else {
+    //そうでなければnashiをセット（keytarは空文字列はエラーとなるため）
     storeid = "nashi";
   }
-
+  console.log(storeid);
   //keytar.getPasswordで保存されているパスワードを取得（非同期）
   cwfpassword = await keytar.getPassword("cwfchecker", storeid);
-  console.log(storeid);
-  console.log(cwfpassword);
+  if (!cwfpassword) {
+    cwfpassword = "nashi";
+  }
 
-  //既存のstoreにPWが入ってる場合は、keytarに格納、storeのpwはダミーに置換
-  // if (storedata.get("pw") !== "dummy" && storedata.get("id") !== "undefined") {
-  //   cwfpassword = storedata.get("pw");
-  //   userpw = cwfpassword;
-  //   keytar.setPassword("cwfchecker", storedata.get("id"), cwfpassword);
-  //   storedata.set("pw", "dummy");
-  //   console.log("dummy syori");
-  // }
+  // 過去の設定があれば削除
+  storedata.delete("pw");
 
   //browserwindow用のURLを組み立てる
   portleturl =
@@ -437,7 +434,7 @@ function userfunction_createmenupage() {
 
   //ローカルのファイルを読み込む場合
   winmenu.loadFile("settings.html");
-  //winmenu.webContents.openDevTools();
+  // winmenu.webContents.openDevTools();
 
   //ウェブコンテンツのイベントもこのオブジェクトを使う。
   winmenu.webContents.on("dom-ready", () => {
@@ -449,7 +446,6 @@ function userfunction_createmenupage() {
     sendingdata.ad = storedata.get("ad");
     sendingdata.cwfaddress = storedata.get("cwfaddress");
     sendingdata.interval = storedata.get("interval");
-    //    console.log(sendingdata);
     winmenu.webContents.send("imano_settei_ha_koredesu", sendingdata);
   });
 
@@ -544,20 +540,23 @@ ipcMain.on("nakami_ohenji", (event, ohenji_sono1, ohenji_sono2) => {
 
 //メインウィンドウのIPC待受（preloadsetting.jsからの返信）
 ipcMain.on("ipc_setting_update", (event, param) => {
-  console.log(param.id);
   const storedata = new store();
   storedata.set("id", param.id);
-  //  storedata.set("pw", param.pw);
+
+  // electron storeは空文字列を保存できるがkeyterはエラーとなるのでそれを回避
+  if (!param.id) {
+    param.id = "nashi";
+  }
+  if (!param.pw) {
+    param.pw = "nashi";
+  }
+
   keytar.setPassword("cwfchecker", param.id, param.pw);
   cwfpassword = param.pw;
   storedata.set("ad", param.ad);
   storedata.set("cwfaddress", param.cwfadress);
   storedata.set("interval", param.interval);
-  console.log(storedata.get("id"));
-  console.log(cwfpassword);
-  console.log(storedata.get("ad"));
-  console.log(storedata.get("cwfaddress"));
-  console.log(storedata.get("interval"));
+
   app.relaunch();
   app.exit();
 });

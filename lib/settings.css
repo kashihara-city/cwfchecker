@@ -27,7 +27,7 @@ h3 {
   border-bottom: 3px solid #000;
 }
 
-a.btn {
+span.btn {
   padding: 1rem 4rem;
   border: 2px solid #000;
   border-radius: 0;
@@ -36,7 +36,7 @@ a.btn {
   color: black;
 }
 
-a.btn:hover {
+span.btn:hover {
   color: #fff;
   background: #000;
 }
