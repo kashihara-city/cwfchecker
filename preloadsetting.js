@@ -1,5 +1,5 @@
-// const store = require("electron-store");
-// window.store = store;
+// sandboxのpreloadではrequireのみ動作
+// このrequireはnodejsのrequireに類似したelectron独自のものでipcRenderer等に限って使用できる
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {

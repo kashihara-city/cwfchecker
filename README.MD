@@ -8,7 +8,7 @@
 
 - ポートレット表示オプションが使用可能であること。
 - パスワードに「￥」、「"」を使用していないこと。
-- 動作確認は バッケージ版 Create!web フロー v5.2.0(v5.3.0 は暫定対応) 、windows10 端末のみです。その他の OS、クラウド版は試験していません。
+- 動作確認は バッケージ版 Create!web フロー v5.4.2 、windows10 端末のみです。その他の OS、クラウド版は試験していません。
 
 ## 機能
 
@@ -19,11 +19,11 @@
 
 ## 依存ライブラリ・使用環境等
 
-- electron 20.1.1
-- electron-store 8.1.0
-- keytar 7.9.0
+- electron ^32.1.2
+- electron-store ^10.0.0
+- keytar ^7.9.0(移行先模索中)
 
-- Node.js 16.15.0
+- Node.js 20.17.0
 
 ## ライセンス・注意事項等
 
@@ -45,7 +45,7 @@
 1. cd hogehoge
 1. npm install
 1. npx electron .
-1. パッケージ化・組織内で配布する場合は、electron-builder 等を使用します。
+1. パッケージ化・組織内で配布する場合は、electron-builder 等を使用します。npm run build で実行できます。
 
 ## 動作イメージ
 

@@ -1,17 +1,19 @@
 {
   "name": "createwebflowchecker",
-  "version": "0.0.2",
+  "version": "0.1.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "buildDev": "electron-builder --win --x64 --dir",
+    "build": "electron-builder --win --x64"
   },
   "keywords": [],
-  "author": "htajima",
+  "author": "htajima@kashihara.city",
   "license": "ISC",
   "build": {
     "productName": "CreateWebFlowChecker",
-    "copyright": "Copyright 2022 ${author}",
+    "copyright": "Copyright 2022-2024 ${author}",
     "appId": "com.electron.cwfchecker",
     "win": {
       "icon": "favicon.ico",
@@ -31,12 +33,12 @@
       "runAfterFinish": false
     }
   },
-  "devDependencies": {
-    "electron": "^20.1.1",
-    "electron-builder": "^23.3.3"
-  },
   "dependencies": {
-    "electron-store": "^8.1.0",
+    "electron-store": "^10.0.0",
     "keytar": "^7.9.0"
+  },
+  "devDependencies": {
+    "electron": "^32.1.2",
+    "electron-builder": "^25.0.5"
   }
 }

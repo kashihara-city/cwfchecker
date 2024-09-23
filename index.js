@@ -1,6 +1,5 @@
-//分割代入。electron.appをappに、electron.BrowserwindowをBrowserwindowに代入する。
-//分割代入は、{a,b,c}=obj;の様に記述し、aにobj.aを、bにobj.bを、cにobj.cを代入する。
-const {
+//ESM形式でインポート
+import {
   app,
   Menu,
   BrowserWindow,
@@ -9,11 +8,11 @@ const {
   shell,
   ipcMain,
   dialog,
-} = require("electron");
-const path = require("path");
-const store = require("electron-store");
-const fs = require("fs");
-const keytar = require("keytar");
+} from "electron";
+import path from "path";
+import store from "electron-store";
+import fs from "fs";
+import keytar from "keytar";
 
 console.log("hoge"); //コンソールに出力される
 
@@ -108,7 +107,7 @@ app.on("will-finish-launching", () => {
 //ウィンドウがフォーカスされたイベント
 //eventを引数にしてウィンドウの番号を表示
 app.on("browser-window-focus", (event) => {
-  console.log("browser-window-focus" + event.sender.id);
+  console.log("browser-window-focus");
 });
 
 //-------------------------------主処理終わり-------------------------------
@@ -162,7 +161,7 @@ const userfunction_initial = async () => {
 const userfunction_createWindow = () => {
   const win = new BrowserWindow({
     width: 600,
-    height: 420,
+    height: 520,
     //決裁画面を開いたときに閉じれなくなるので、フレームレス等はできない
     webPreferences: {
       preload: path.join(app.getAppPath(), "preloadcwf.js"),
@@ -184,7 +183,7 @@ const userfunction_createWindow = () => {
   //win.loadURL('data:text/html;charset=utf-8,' + html);
 
   //ブラウザのデバッグを表示する場合。webcontntsは表示されているコンテンツを扱うプロパティ
-  //win.webContents.openDevTools();
+  // win.webContents.openDevTools();
 
   //ウィンドウを表示したり閉じたりするショートカットキーを登録する
   globalShortcut.register("F3", () => {
@@ -212,7 +211,10 @@ const userfunction_createWindow = () => {
   win.webContents.on("dom-ready", () => {
     counter.DOMreadycounter++;
     console.log("dom-ready" + counter.DOMreadycounter);
-
+    // 一番最初は隠す（起動時に表示しない、ただし次のpreloadの処理で案件がある場合は表示される）
+    if (counter.DOMreadycounter == 1) {
+      win.hide();
+    }
     //preloadで読んだJSで件数などを問い合わせ
     win.webContents.send("nakami_okure", SearchWord, SearchWordb);
   });
@@ -285,7 +287,7 @@ const userfunction_createWindow = () => {
   win.webContents.setWindowOpenHandler(({ url, referrer, postBody }) => {
     //もしログインウィンドウを開く場合は、規定のブラウザで開く（electronで申請フォームを開くと
     //申請フォーム側のサブフォーム等がうまく動かないので）
-    if (url.slice(-12) === "/XFV20/login") {
+    if (url.endsWith("/XFV20/login")) {
       shell.openExternal(url);
       return { action: "deny" };
     } else {
@@ -388,7 +390,7 @@ const userfunction_createMenu = () => {
       label: "   メニュー   ",
       submenu: [
         {
-          label: "設定画面",
+          label: "　設定画面　",
           click: () => {
             console.log("New menu.");
             //設定画面を開いているときは二重に開かない
@@ -400,7 +402,7 @@ const userfunction_createMenu = () => {
         },
         { type: "separator" },
         {
-          label: "アプリ終了",
+          label: "　アプリ終了　",
           click: () => {
             console.log("Quit menu.");
             flag.DontPreventClose = 1;
@@ -507,6 +509,13 @@ const userfunction_ShowWindow = () => {
   window_main.focus();
 };
 
+const userfunction_ResizeWindow = (kensu) => {
+  if (kensu == 0) {
+    kensu++;
+  }
+  window_main.setSize(600, 520 + kensu * 40);
+};
+
 //-------------------------------ウインドウ操作関係終わり-------------------------------
 
 //-------------------------------メイン・レンダラープロセス間通信-------------------------------
@@ -517,6 +526,7 @@ ipcMain.on("nakami_ohenji", (event, ohenji_sono1, ohenji_sono2) => {
   console.log("ninsyokensuha" + ohenji_sono2);
   counter.kessaikensu = ohenji_sono1;
   flag.portletauthsuccess = ohenji_sono2;
+  userfunction_ResizeWindow(counter.kessaikensu);
 
   if (counter.kessaikensu > 0) {
     //ここに決裁待ちが１件以上有る場合の処理を書く
@@ -584,4 +594,5 @@ const userfunction_deletefilesinfolder = (dir) => {
 
 //credit
 // v0.0.1 2021.4.21 release / Hiroshi Tajima @ Kashihara City
-// v0.0.2 2022.9.6
+// v0.0.2 2022.9.6  update / cwf5.3.0, electron20, nodejs16に対応
+// v0.1.0 2024.9.22 update / cwf5.4.2, electron32, nodejs20に対応
