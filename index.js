@@ -7,6 +7,7 @@ import {
   globalShortcut,
   shell,
   ipcMain,
+  Notification,
   dialog,
 } from "electron";
 import path from "path";
@@ -63,6 +64,8 @@ let cwfpassword;
 let portleturl;
 //設定画面で設定する更新間隔
 let timeinterval;
+// ポップアップせず通知バーで処理待ち案件を通知するかどうか
+let notifybybar;
 //トレイ
 let tray;
 //-------------------------------グローバル変数又は変更可能性の高い設定終わり-------------------------------
@@ -80,6 +83,7 @@ app.whenReady().then(async () => {
   userfunction_createWindow();
   //トレイアイコンを作る
   userfunction_createTrayIcon();
+  app.setAppUserModelId("電子決裁通知アプリ");
 });
 
 //appのwill-quit等のイベントを捕まえて、アプリケーションを終了する
@@ -152,6 +156,8 @@ const userfunction_initial = async () => {
     timeinterval = 15;
   }
   console.log("timeinterval=" + timeinterval);
+  // ポップアップしないかどうか
+  notifybybar = storedata.get("notifybybar");
 };
 //-------------------------------初期処理関数終わり-------------------------------
 
@@ -428,7 +434,7 @@ const userfunction_createMenu = () => {
 function userfunction_createmenupage() {
   const winmenu = new BrowserWindow({
     width: 600,
-    height: 750,
+    height: 770,
     webPreferences: {
       preload: path.join(app.getAppPath(), "preloadsetting.js"),
     },
@@ -448,6 +454,7 @@ function userfunction_createmenupage() {
     sendingdata.ad = storedata.get("ad");
     sendingdata.cwfaddress = storedata.get("cwfaddress");
     sendingdata.interval = storedata.get("interval");
+    sendingdata.notifybybar = storedata.get("notifybybar");
     winmenu.webContents.send("imano_settei_ha_koredesu", sendingdata);
   });
 
@@ -531,7 +538,18 @@ ipcMain.on("nakami_ohenji", (event, ohenji_sono1, ohenji_sono2) => {
   if (counter.kessaikensu > 0) {
     //ここに決裁待ちが１件以上有る場合の処理を書く
     console.log("kessai ari" + counter.kessaikensu + "ken");
-    userfunction_ShowWindow();
+
+    if (notifybybar && window_main.isVisible() === false) {
+      if (Notification.isSupported()) {
+        const notification = new Notification({
+          body: counter.kessaikensu + " 件処理待ちです。",
+        });
+
+        notification.show();
+      }
+    } else {
+      userfunction_ShowWindow();
+    }
   } else {
     //ここに決裁待ちがない場合の処理
     console.log("kessai nashi");
@@ -566,6 +584,7 @@ ipcMain.on("ipc_setting_update", (event, param) => {
   storedata.set("ad", param.ad);
   storedata.set("cwfaddress", param.cwfadress);
   storedata.set("interval", param.interval);
+  storedata.set("notifybybar", param.notifybybar);
 
   app.relaunch();
   app.exit();

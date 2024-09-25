@@ -36,6 +36,10 @@
       />
       <label for="input5">確認間隔（分）</label>
       <input class="fminput" id="input5" type="text" placeholder="15" />
+
+      <label for="input6">ポップアップせず通知バーでお知らせ</label>
+      <input class="fminputchk" id="input6" type="checkbox" />
+      <div class="separator"></div>
       <span class="btn" onclick="save()">設定反映</span>
     </div>
 
@@ -47,6 +51,7 @@
           ad: document.querySelector("#input3").value,
           cwfadress: document.querySelector("#input4").value,
           interval: document.querySelector("#input5").value,
+          notifybybar: document.querySelector("#input6").checked,
         };
         window.api.Settingupdate(sendingmessage);
       }

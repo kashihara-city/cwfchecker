@@ -27,6 +27,20 @@ h3 {
   border-bottom: 3px solid #000;
 }
 
+.fminputchk {
+  accent-color: #000;
+  transform: scale(1.5);
+  margin: 10px;
+  margin-bottom: 50px;
+}
+
+.fminputchk:checked {
+  transition: 0.2s;
+}
+
+div.separator {
+  width: 100%;
+}
 span.btn {
   padding: 1rem 4rem;
   border: 2px solid #000;
