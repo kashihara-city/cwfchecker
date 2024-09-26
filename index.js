@@ -516,11 +516,16 @@ const userfunction_ShowWindow = () => {
   window_main.focus();
 };
 
-const userfunction_ResizeWindow = (kensu) => {
+const userfunction_ResizeWindow = (kensu, imgcount) => {
+  // 処理待ち案件数が0件の場合は1件分のスペースを空ける
   if (kensu == 0) {
-    kensu++;
+    kensu = 1;
   }
-  window_main.setSize(600, 520 + kensu * 40);
+  // 画像がある場合は画像１つ分のスペースを空ける
+  if (imgcount > 0) {
+    imgcount = 1;
+  }
+  window_main.setSize(600, 290 + kensu * 35 + imgcount * 280);
 };
 
 //-------------------------------ウインドウ操作関係終わり-------------------------------
@@ -528,43 +533,50 @@ const userfunction_ResizeWindow = (kensu) => {
 //-------------------------------メイン・レンダラープロセス間通信-------------------------------
 
 //メインウィンドウのIPC待受（preloadcwf.jsからの返信）
-ipcMain.on("nakami_ohenji", (event, ohenji_sono1, ohenji_sono2) => {
-  console.log("kessaikensuha" + ohenji_sono1);
-  console.log("ninsyokensuha" + ohenji_sono2);
-  counter.kessaikensu = ohenji_sono1;
-  flag.portletauthsuccess = ohenji_sono2;
-  userfunction_ResizeWindow(counter.kessaikensu);
+ipcMain.on(
+  "nakami_ohenji",
+  (event, ohenji_sono1, ohenji_sono2, ohenji_sono3) => {
+    console.log("kessaikensuha" + ohenji_sono1);
+    console.log("ninsyokensuha" + ohenji_sono2);
+    console.log("available image:" + ohenji_sono3);
+    counter.kessaikensu = ohenji_sono1;
+    flag.portletauthsuccess = ohenji_sono2;
+    userfunction_ResizeWindow(counter.kessaikensu, ohenji_sono3);
 
-  if (counter.kessaikensu > 0) {
-    //ここに決裁待ちが１件以上有る場合の処理を書く
-    console.log("kessai ari" + counter.kessaikensu + "ken");
+    if (counter.kessaikensu > 0) {
+      //ここに決裁待ちが１件以上有る場合の処理を書く
+      console.log("kessai ari" + counter.kessaikensu + "ken");
 
-    if (notifybybar && window_main.isVisible() === false) {
-      if (Notification.isSupported()) {
+      if (
+        // ポップアップしない設定があり、メインウィンドウが手動で生じされておらず、notificationがサポートされている場合は、ポップアップせず通知バーで処理
+        notifybybar &&
+        window_main.isVisible() === false &&
+        Notification.isSupported()
+      ) {
         const notification = new Notification({
           body: counter.kessaikensu + " 件処理待ちです。",
         });
 
         notification.show();
+      } else {
+        userfunction_ShowWindow();
       }
     } else {
-      userfunction_ShowWindow();
-    }
-  } else {
-    //ここに決裁待ちがない場合の処理
-    console.log("kessai nashi");
-    //ここに決裁待ちが認証が成功した場合
-    if (flag.portletauthsuccess > 0) {
-      //ここに決裁待ちはないが認証が成功した場合の処理
-      console.log("portlet success");
-      //win.hide();
-    } else {
-      //ここに認証が失敗しているか、全然違うページを表示してるときの処理
-      console.log("portlet failure");
-      userfunction_ShowWindow();
+      //ここに決裁待ちがない場合の処理
+      console.log("kessai nashi");
+
+      if (flag.portletauthsuccess > 0) {
+        //ここに決裁待ちはないが認証が成功した場合の処理
+        console.log("portlet success");
+        //win.hide();
+      } else {
+        //ここに認証が失敗しているか、全然違うページを表示してるときの処理
+        console.log("portlet failure");
+        userfunction_ShowWindow();
+      }
     }
   }
-});
+);
 
 //メインウィンドウのIPC待受（preloadsetting.jsからの返信）
 ipcMain.on("ipc_setting_update", (event, param) => {

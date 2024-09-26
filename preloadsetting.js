@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld("api", {
   },
 });
 
+// index.jsからwinmenu.webContents.send("imano_settei_ha_koredesu", sendingdata);で送られてきたものはipcrRnderer.onで処理される
+
 ipcRenderer.on("imano_settei_ha_koredesu", (event, st1) => {
   document.querySelector("#input1").value = st1.id;
   document.querySelector("#input2").value = st1.pw;
