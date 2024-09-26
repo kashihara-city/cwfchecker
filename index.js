@@ -31,6 +31,9 @@ app.disableHardwareAcceleration();
 //-------------------------------ポートレットから検索する文字列設定
 //決裁がある場合に登場する文字列
 const SearchWord = "anchor anchor-primary";
+//件数表示部分のクエリセレクタ
+// document.querySelector('ul.form-list_h span.dummy').textContenで件数が取れる
+const QuerySelectorKensu = "ul.form-list_h span.dummy";
 //ポートレット表示が正常に表示された場合に必ずある文字列（エラー判定用）
 const SearchWordb = "<!-- 認証成功 -->";
 //添付ファイルなどのダウンロード先
@@ -222,7 +225,12 @@ const userfunction_createWindow = () => {
       win.hide();
     }
     //preloadで読んだJSで件数などを問い合わせ
-    win.webContents.send("nakami_okure", SearchWord, SearchWordb);
+    win.webContents.send(
+      "nakami_okure",
+      SearchWord,
+      SearchWordb,
+      QuerySelectorKensu
+    );
   });
 
   //ブラウザウィンドウのイベント
@@ -535,10 +543,15 @@ const userfunction_ResizeWindow = (kensu, imgcount) => {
 //メインウィンドウのIPC待受（preloadcwf.jsからの返信）
 ipcMain.on(
   "nakami_ohenji",
-  (event, ohenji_sono1, ohenji_sono2, ohenji_sono3) => {
-    console.log("kessaikensuha" + ohenji_sono1);
-    console.log("ninsyokensuha" + ohenji_sono2);
+  (event, ohenji_sono1, ohenji_sono2, ohenji_sono3, ohenji_sono4) => {
+    // SearchWordの登場回数
+    console.log("kessaikensu:" + ohenji_sono1);
+    // SearchWordbの登場回数
+    console.log("ninsyokensu:" + ohenji_sono2);
+    // サーバ内の表示画像の個数
     console.log("available image:" + ohenji_sono3);
+    // QuerySelectorKensuで取得してきた数字
+    console.log("syorimati:" + ohenji_sono4);
     counter.kessaikensu = ohenji_sono1;
     flag.portletauthsuccess = ohenji_sono2;
     userfunction_ResizeWindow(counter.kessaikensu, ohenji_sono3);
@@ -554,7 +567,7 @@ ipcMain.on(
         Notification.isSupported()
       ) {
         const notification = new Notification({
-          body: counter.kessaikensu + " 件処理待ちです。",
+          body: ohenji_sono4 + " 件処理待ちです。",
         });
 
         notification.show();

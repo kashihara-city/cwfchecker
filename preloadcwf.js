@@ -3,12 +3,14 @@
 const { ipcRenderer } = require("electron");
 
 // index.jsからwin.webContents.send("nakami_okure", SearchWord, SearchWordb);で送られてきたものはipcrRnderer.onで処理される
-ipcRenderer.on("nakami_okure", (event, st1, st2) => {
+ipcRenderer.on("nakami_okure", (event, st1, st2, st3) => {
   const hontai = document.body.innerHTML;
   // キーワードst1がポートレットに何回登場するかで件数をカウントする
   const ohenji1 = (hontai.match(new RegExp(st1, "g")) || []).length;
   // st2は認証が通っているか
   const ohenji2 = (hontai.match(new RegExp(st2, "g")) || []).length;
+  // ポートレットの「処理待ち（〇）」の数字の所
+  const ohenji4 = document.querySelector(st3).textContent;
 
   // ポートレットの下に表示する画像候補（説明図などを想定）
   const imageCandidates = [
@@ -37,7 +39,7 @@ ipcRenderer.on("nakami_okure", (event, st1, st2) => {
       if (++checkCount === imageCandidates.length) {
         // 画像のチェックが終わった段階でプロセス間通信の返信を行う
         const ohenji3 = availableImages.length;
-        ipcRenderer.send("nakami_ohenji", ohenji1, ohenji2, ohenji3);
+        ipcRenderer.send("nakami_ohenji", ohenji1, ohenji2, ohenji3, ohenji4);
         showRandomImage(availableImages);
       }
     };
