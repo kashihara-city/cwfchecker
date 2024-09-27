@@ -585,7 +585,7 @@ ipcMain.on(
       } else {
         //ここに認証が失敗しているか、全然違うページを表示してるときの処理
         console.log("portlet failure");
-        userfunction_ShowWindow();
+        // userfunction_ShowWindow();
       }
     }
   }
