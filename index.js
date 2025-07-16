@@ -660,3 +660,4 @@ const userfunction_deletefilesinfolder = (dir) => {
 // v0.0.1 2021.4.21 release / Hiroshi Tajima @ Kashihara City
 // v0.0.2 2022.9.6  update / cwf5.3.0, electron20, nodejs16に対応
 // v0.1.0 2024.9.22 update / cwf5.4.2, electron32, nodejs20に対応
+// v0.1.1 2025.7.17 update / electron37, nodejs22に対応
