@@ -13,7 +13,7 @@
   "license": "ISC",
   "build": {
     "productName": "CreateWebFlowChecker",
-    "copyright": "Copyright 2022-2024 ${author}",
+    "copyright": "Copyright 2022-2025 ${author}",
     "appId": "com.electron.cwfchecker",
     "win": {
       "icon": "favicon.ico",
@@ -34,11 +34,11 @@
     }
   },
   "dependencies": {
-    "electron-store": "^10.0.0",
+    "electron-store": "^10.1.0",
     "keytar": "^7.9.0"
   },
   "devDependencies": {
-    "electron": "^32.1.2",
-    "electron-builder": "^25.0.5"
+    "electron": "^37.2.2",
+    "electron-builder": "^26.0.12"
   }
 }

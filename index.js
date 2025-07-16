@@ -9,11 +9,12 @@ import {
   ipcMain,
   Notification,
   dialog,
+  safeStorage,
 } from "electron";
 import path from "path";
 import store from "electron-store";
 import fs from "fs";
-import keytar from "keytar";
+import keytar from "keytar"; // 既存ユーザ移行用フォールバック
 
 console.log("hoge"); //コンソールに出力される
 
@@ -71,6 +72,8 @@ let timeinterval;
 let notifybybar;
 //トレイ
 let tray;
+// 設定未登録時デフォルト
+let shortcutkey = "F3";
 //-------------------------------グローバル変数又は変更可能性の高い設定終わり-------------------------------
 
 //-------------------------------主処理----------------------------------------
@@ -124,20 +127,29 @@ app.on("browser-window-focus", (event) => {
 const userfunction_initial = async () => {
   const storedata = new store();
 
-  //keytar.getpasswordのためのIDを準備
-  let storeid;
-  // storedataに値があって、かつ空文字列等でなければそれを代入
-  if (storedata.has("id") && storedata.get("id")) {
-    storeid = storedata.get("id");
+  // --- パスワード読み込み（electron‑store優先 → keytarフォールバック） ---
+  let encPwBase64 = storedata.get("encpw");
+
+  if (encPwBase64) {
+    cwfpassword = safeStorage.decryptString(Buffer.from(encPwBase64, "base64"));
   } else {
-    //そうでなければnashiをセット（keytarは空文字列はエラーとなるため）
-    storeid = "nashi";
-  }
-  console.log(storeid);
-  //keytar.getPasswordで保存されているパスワードを取得（非同期）
-  cwfpassword = await keytar.getPassword("cwfchecker", storeid);
-  if (!cwfpassword) {
-    cwfpassword = "nashi";
+    // 旧 keytar から読み出して electron‑store へ移行
+    let storeid;
+    // storedataに値があって、かつ空文字列等でなければそれを代入
+    if (storedata.has("id") && storedata.get("id")) {
+      storeid = storedata.get("id");
+    } else {
+      //そうでなければnashiをセット（keytarは空文字列はエラーとなるため）
+      storeid = "nashi";
+    }
+    console.log(storeid);
+    cwfpassword = (await keytar.getPassword("cwfchecker", storeid)) || "nashi";
+    if (cwfpassword !== "nashi") {
+      storedata.set(
+        "encpw",
+        safeStorage.encryptString(cwfpassword).toString("base64")
+      );
+    }
   }
 
   // 過去の設定があれば削除
@@ -161,6 +173,8 @@ const userfunction_initial = async () => {
   console.log("timeinterval=" + timeinterval);
   // ポップアップしないかどうか
   notifybybar = storedata.get("notifybybar");
+  // ショートカットキー（未設定時は F3）
+  shortcutkey = storedata.get("shortcut") || "F3";
 };
 //-------------------------------初期処理関数終わり-------------------------------
 
@@ -195,7 +209,7 @@ const userfunction_createWindow = () => {
   // win.webContents.openDevTools();
 
   //ウィンドウを表示したり閉じたりするショートカットキーを登録する
-  globalShortcut.register("F3", () => {
+  globalShortcut.register(shortcutkey, () => {
     console.log(
       "GlobalShortcutPressed" +
         win.isFocused() +
@@ -442,7 +456,7 @@ const userfunction_createMenu = () => {
 function userfunction_createmenupage() {
   const winmenu = new BrowserWindow({
     width: 600,
-    height: 770,
+    height: 900,
     webPreferences: {
       preload: path.join(app.getAppPath(), "preloadsetting.js"),
     },
@@ -463,6 +477,7 @@ function userfunction_createmenupage() {
     sendingdata.cwfaddress = storedata.get("cwfaddress");
     sendingdata.interval = storedata.get("interval");
     sendingdata.notifybybar = storedata.get("notifybybar");
+    sendingdata.shortcut = storedata.get("shortcut") || "F3";
     winmenu.webContents.send("imano_settei_ha_koredesu", sendingdata);
   });
 
@@ -604,12 +619,17 @@ ipcMain.on("ipc_setting_update", (event, param) => {
     param.pw = "nashi";
   }
 
-  keytar.setPassword("cwfchecker", param.id, param.pw);
+  // パスワードを safeStorage で保存
+  const enc = safeStorage.encryptString(param.pw).toString("base64");
+  storedata.set("encpw", enc);
   cwfpassword = param.pw;
+
   storedata.set("ad", param.ad);
   storedata.set("cwfaddress", param.cwfadress);
   storedata.set("interval", param.interval);
   storedata.set("notifybybar", param.notifybybar);
+  // ショートカットキー保存
+  storedata.set("shortcut", param.shortcut || "F3");
 
   app.relaunch();
   app.exit();

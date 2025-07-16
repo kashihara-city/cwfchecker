@@ -18,5 +18,6 @@ ipcRenderer.on("imano_settei_ha_koredesu", (event, st1) => {
   document.querySelector("#input4").value = st1.cwfaddress;
   document.querySelector("#input5").value = st1.interval;
   document.querySelector("#input6").checked = st1.notifybybar;
+  document.querySelector("#input7").value = st1.shortcut || "F3";
   console.log(st1);
 });

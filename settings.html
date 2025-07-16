@@ -37,6 +37,14 @@
       <label for="input5">確認間隔（分）</label>
       <input class="fminput" id="input5" type="text" placeholder="15" />
 
+      <label for="input7">ショートカットキー</label>
+      <input
+        class="fminput"
+        id="input7"
+        type="text"
+        placeholder="F3 , Shift+Left など"
+      />
+      <div class="separator"></div>
       <label for="input6">ポップアップせず通知バーでお知らせ</label>
       <input class="fminputchk" id="input6" type="checkbox" />
       <div class="separator"></div>
@@ -52,6 +60,7 @@
           cwfadress: document.querySelector("#input4").value,
           interval: document.querySelector("#input5").value,
           notifybybar: document.querySelector("#input6").checked,
+          shortcut: document.querySelector("#input7").value,
         };
         window.api.Settingupdate(sendingmessage);
       }
